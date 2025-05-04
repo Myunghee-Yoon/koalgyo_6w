@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Form 테스트1</title>
+    <style>
+      h3 {
+        text-align: center;
+      }
+      .container {
+        display: flex;
+        /* justify-content: space-around; */
+        justify-content: center;
+        /* text-align: center; */
+        margin: 10px;
+        padding: 10px;
+      }
+      #form1 {
+        background-color: yellow;
+        width: 300px;
+        margin: 10px;
+        padding: 10px;
+      }
+      #form2 {
+        background-color: aqua;
+        width: 300px;
+        margin: 10px;
+        padding: 10px;
+      }
+    </style>
+    <script>
+      function submitForm1(event) {
+          event.preventDefault();
+
+          const email = document.getElementById("form1_email_id").value;
+          const name = document.getElementById("form1_name_id").value;
+          const message = document.getElementById("form1_message_id").value;
+
+          const study = document.getElementById("form1_study_id").value;
+
+          let seminar = '';
+
+          if (document.getElementById("form1_seminar_id1").checked) {
+            seminar = document.getElementById("form1_seminar_id1").value;
+          } else if (document.getElementById("form1_seminar_id2").checked) {
+            seminar = document.getElementById("form1_seminar_id2").value;
+          }
+          const subject = document.getElementById("form1_subject_id").value;
+
+          fetch("", {
+              method: "POST",
+              mode: "no-cors",
+              headers: {
+                  "Content-Type": "application/x-www-form-urlencoded"
+              },
+              body: `email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&message=${encodeURIComponent(message)}&study=${encodeURIComponent(study)}&seminar=${encodeURIComponent(seminar)}&subject=${encodeURIComponent(subject)}`
+          }).then(response => {
+              alert("정보가 성공적으로 전송되었습니다!");
+          }).catch(error => {
+              alert("전송 실패: " + error.message);
+          });
+      }
+  </script>
+  
+  </head>
+  <h3>WebForm을 사용해봅시다</h3>
+  <div class="container">
+    <div id="form1">
+      <form id="form1_id" onsubmit="submitForm1(event)">
+        <fieldset>
+          <legend>G-DEAL 화이팅</legend>
+          <label for="email">이메일:<br>
+            <input type="email" id="form1_email_id"placeholder="id@gmail.com" required>
+          </label><br>
+          
+          <label>이름:<br>
+            <input type="text" id="form1_name_id" name="form1_name_name" placeholder="하윤종" required>
+          </label><br>
+
+          <label>오늘의 수업은 어떠셨나요<br>
+            <textarea rows=4 id="form1_message_id" name="form1_message_name" required>다들 좋은 시간이었기를 바랍니다.</textarea>
+          </label><br>
+
+          일요일이 즐겁다:<br>
+          <label>네<input type="radio" name="form1_seminar_name" id="form1_seminar_id1" value="네"></label><br>
+          <label>아니요<input type="radio" name="form1_seminar_name"  id="form1_seminar_id2" value="아니요"></label><br>
+          <br>
+
+          앞으로 추가로 배우시고 싶은 내용은?: : <br>
+          <select name="form1_subject_name" id="form1_subject_id">
+              <option value="웹프로그래밍">웹프로그래밍</option>
+              <option value="앱스스크립트">앱스스크립트</option>
+              <option value="인공지능">인공지능</option>
+          </select><br><br>
+          <button type="submit">제출</button>
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</html>
