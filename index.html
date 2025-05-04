@@ -28,17 +28,18 @@
       }
     </style>
     <script>
-      function submitForm1(event) {
+   function submitForm1(event) {
           event.preventDefault();
+
+          // Google Apps Script 웹 앱 URL (반드시 본인의 URL로 교체해야 합니다)
+          const webAppUrl = "https://script.google.com/macros/s/AKfycbzfC_FXdQn7eaZasV7v5sQEeZ-lI2epLbHX8bnrcGNlg4U3hate60hJqf2u8BdMG1_M/exec"; // <--- 여기에 배포된 웹 앱 URL을 넣으세요!
 
           const email = document.getElementById("form1_email_id").value;
           const name = document.getElementById("form1_name_id").value;
           const message = document.getElementById("form1_message_id").value;
-
-          const study = document.getElementById("form1_study_id").value;
+          const study = document.getElementById("form1_study_id").value; // 추가된 input에서 값 가져오기
 
           let seminar = '';
-
           if (document.getElementById("form1_seminar_id1").checked) {
             seminar = document.getElementById("form1_seminar_id1").value;
           } else if (document.getElementById("form1_seminar_id2").checked) {
@@ -46,16 +47,32 @@
           }
           const subject = document.getElementById("form1_subject_id").value;
 
-          fetch("", {
+          // fetch 요청 본문 구성 (key 이름은 Apps Script의 e.parameter에서 사용할 이름과 일치해야 함)
+          const formData = new URLSearchParams();
+          formData.append('email', email);
+          formData.append('name', name);
+          formData.append('message', message);
+          formData.append('study', study);
+          formData.append('seminar', seminar);
+          formData.append('subject', subject);
+
+          fetch(webAppUrl, { // URL 변수 사용
               method: "POST",
-              mode: "no-cors",
+              // mode: "no-cors", // no-cors 모드는 응답을 받지 못하게 하므로, 성공/실패 확인이 어렵습니다.
+                                // Apps Script에서 ContentService를 사용하면 CORS 문제가 발생하지 않습니다.
               headers: {
-                  "Content-Type": "application/x-www-form-urlencoded"
+                  // "Content-Type": "application/x-www-form-urlencoded" // URLSearchParams 사용 시 불필요
               },
-              body: `email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&message=${encodeURIComponent(message)}&study=${encodeURIComponent(study)}&seminar=${encodeURIComponent(seminar)}&subject=${encodeURIComponent(subject)}`
-          }).then(response => {
+              body: formData // URLSearchParams 객체 사용
+          })
+          .then(response => response.text()) // 응답을 텍스트로 변환
+          .then(result => {
+              console.log("Success:", result); // 성공 응답 로그 (Apps Script에서 보낸 "Success")
               alert("정보가 성공적으로 전송되었습니다!");
-          }).catch(error => {
+              // document.getElementById("form1_id").reset(); // 성공 시 폼 초기화 (선택 사항)
+          })
+          .catch(error => {
+              console.error("Error:", error);
               alert("전송 실패: " + error.message);
           });
       }
