@@ -34,50 +34,89 @@
           // Google Apps Script 웹 앱 URL (반드시 본인의 URL로 교체해야 합니다)
           const webAppUrl = "https://script.google.com/macros/s/AKfycbzfC_FXdQn7eaZasV7v5sQEeZ-lI2epLbHX8bnrcGNlg4U3hate60hJqf2u8BdMG1_M/exec"; // <--- 여기에 배포된 웹 앱 URL을 넣으세요!
 
-          const email = document.getElementById("form1_email_id").value;
-          const name = document.getElementById("form1_name_id").value;
-          const message = document.getElementById("form1_message_id").value;
-          const study = document.getElementById("form1_study_id").value; // 추가된 input에서 값 가져오기
+          try { // 오류 발생 가능성이 있는 코드를 try 블록으로 감쌉니다.
+            const email = document.getElementById("form1_email_id").value;
+            const name = document.getElementById("form1_name_id").value;
+            const message = document.getElementById("form1_message_id").value;
+            const studyElement = document.getElementById("form1_study_id"); // 요소를 먼저 찾습니다.
+            if (!studyElement) { // 요소가 없으면 오류 메시지를 표시하고 중단합니다.
+              alert("오류: 'study' 입력 필드를 찾을 수 없습니다 (ID: form1_study_id). HTML 코드를 확인하세요.");
+              return;
+            }
+            const study = studyElement.value; // 요소가 있으면 값을 가져옵니다.
 
-          let seminar = '';
-          if (document.getElementById("form1_seminar_id1").checked) {
-            seminar = document.getElementById("form1_seminar_id1").value;
-          } else if (document.getElementById("form1_seminar_id2").checked) {
-            seminar = document.getElementById("form1_seminar_id2").value;
+            let seminar = '';
+            // 라디오 버튼 값 가져오기 (선택된 것이 없으면 빈 문자열 유지)
+            const seminarRadio = document.querySelector('input[name="form1_seminar_name"]:checked');
+            if (seminarRadio) {
+                seminar = seminarRadio.value;
+            } else {
+                // 라디오 버튼이 required이므로 이 경우는 거의 없지만, 방어적으로 코딩
+                alert("오류: '일요일이 즐겁다' 항목을 선택해주세요.");
+                return;
+            }
+
+            const subject = document.getElementById("form1_subject_id").value;
+            if (!subject) { // Select에서 기본값("선택하세요")이 선택된 경우
+                alert("오류: '배우고 싶은 내용'을 선택해주세요.");
+                return;
+            }
+
+            // fetch 요청 본문 구성 (key 이름은 Apps Script의 e.parameter에서 사용할 이름과 일치해야 함)
+            const formData = new URLSearchParams();
+            formData.append('email', email);
+            formData.append('name', name);
+            formData.append('message', message);
+            formData.append('study', study);
+            formData.append('seminar', seminar);
+            formData.append('subject', subject);
+
+            // 제출 버튼 비활성화 (중복 제출 방지)
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = '전송 중...';
+
+            fetch(webAppUrl, { // URL 변수 사용
+                method: "POST",
+                body: formData // URLSearchParams 객체 사용
+            })
+            .then(response => {
+                if (!response.ok) { // 응답 상태가 ok (200-299)가 아니면 오류로 처리
+                   // 응답 본문을 텍스트로 읽어 오류 메시지로 사용 시도
+                   return response.text().then(text => {
+                       throw new Error(`HTTP error! status: ${response.status}, message: ${text || 'No error message'}`);
+                   });
+                }
+                return response.text(); // 응답을 텍스트로 변환
+            })
+            .then(result => {
+                console.log("Server Response:", result); // 서버 응답 로그 (Apps Script에서 보낸 "Success" 또는 오류 메시지)
+                if (result.startsWith("Error:")) { // Apps Script에서 보낸 오류 메시지 처리
+                  alert("전송 중 서버 오류 발생: " + result);
+                } else if (result === "Success") { // Apps Script에서 "Success"를 보냈는지 명확히 확인
+                  alert("정보가 성공적으로 전송되었습니다!");
+                  document.getElementById("form1_id").reset(); // 성공 시 폼 초기화
+                } else {
+                  // 예상치 못한 응답 처리
+                  alert("서버로부터 예상치 못한 응답을 받았습니다: " + result);
+                }
+            })
+            .catch(error => { // 네트워크 오류 또는 fetch 처리 중 발생한 오류
+                console.error("Fetch Error:", error);
+                alert("전송 실패: " + error.message + "\n네트워크 연결 또는 서버 상태를 확인하세요. 브라우저 개발자 콘솔(F12)에서 자세한 내용을 볼 수 있습니다.");
+            })
+            .finally(() => {
+                // 성공/실패 여부와 관계없이 버튼 다시 활성화
+                submitButton.disabled = false;
+                submitButton.textContent = '제출';
+            });
+          } catch (error) { // try 블록 내에서 발생한 동기적 오류 (예: getElementById 실패)
+            console.error("Form processing error:", error);
+            alert("폼 처리 중 오류 발생: " + error.message + "\n브라우저 개발자 콘솔(F12)을 확인하세요.");
           }
-          const subject = document.getElementById("form1_subject_id").value;
-
-          // fetch 요청 본문 구성 (key 이름은 Apps Script의 e.parameter에서 사용할 이름과 일치해야 함)
-          const formData = new URLSearchParams();
-          formData.append('email', email);
-          formData.append('name', name);
-          formData.append('message', message);
-          formData.append('study', study);
-          formData.append('seminar', seminar);
-          formData.append('subject', subject);
-
-          fetch(webAppUrl, { // URL 변수 사용
-              method: "POST",
-              // mode: "no-cors", // no-cors 모드는 응답을 받지 못하게 하므로, 성공/실패 확인이 어렵습니다.
-                                // Apps Script에서 ContentService를 사용하면 CORS 문제가 발생하지 않습니다.
-              headers: {
-                  // "Content-Type": "application/x-www-form-urlencoded" // URLSearchParams 사용 시 불필요
-              },
-              body: formData // URLSearchParams 객체 사용
-          })
-          .then(response => response.text()) // 응답을 텍스트로 변환
-          .then(result => {
-              console.log("Success:", result); // 성공 응답 로그 (Apps Script에서 보낸 "Success")
-              alert("정보가 성공적으로 전송되었습니다!");
-              // document.getElementById("form1_id").reset(); // 성공 시 폼 초기화 (선택 사항)
-          })
-          .catch(error => {
-              console.error("Error:", error);
-              alert("전송 실패: " + error.message);
-          });
       }
   </script>
-  
+
   </head>
   <h3>WebForm을 사용해봅시다</h3>
   <div class="container">
@@ -85,25 +124,37 @@
       <form id="form1_id" onsubmit="submitForm1(event)">
         <fieldset>
           <legend>G-DEAL 화이팅</legend>
-          <label for="email">이메일:<br>
-            <input type="email" id="form1_email_id"placeholder="id@gmail.com" required>
+          <!-- label의 for 속성을 input의 id와 일치시킵니다 -->
+          <label for="form1_email_id">이메일:<br>
+            <input type="email" id="form1_email_id" placeholder="id@gmail.com" required>
           </label><br>
-          
-          <label>이름:<br>
+
+          <!-- label의 for 속성을 input의 id와 일치시킵니다 -->
+          <label for="form1_name_id">이름:<br>
             <input type="text" id="form1_name_id" name="form1_name_name" placeholder="하윤종" required>
           </label><br>
 
-          <label>오늘의 수업은 어떠셨나요<br>
+          <!-- label의 for 속성을 textarea의 id와 일치시킵니다 -->
+          <label for="form1_message_id">오늘의 수업은 어떠셨나요<br>
             <textarea rows=4 id="form1_message_id" name="form1_message_name" required>다들 좋은 시간이었기를 바랍니다.</textarea>
           </label><br>
 
+          <!-- !!! 누락되었던 study 입력 필드 추가 !!! -->
+          <label for="form1_study_id">스터디 참여 여부:<br>
+            <input type="text" id="form1_study_id" name="form1_study_name" placeholder="예: 참여 / 미참여" required>
+          </label><br>
+
           일요일이 즐겁다:<br>
-          <label>네<input type="radio" name="form1_seminar_name" id="form1_seminar_id1" value="네"></label><br>
-          <label>아니요<input type="radio" name="form1_seminar_name"  id="form1_seminar_id2" value="아니요"></label><br>
+          <!-- 라디오 버튼에도 required 추가 -->
+          <label><input type="radio" name="form1_seminar_name" id="form1_seminar_id1" value="네" required>네</label><br>
+          <label><input type="radio" name="form1_seminar_name"  id="form1_seminar_id2" value="아니요">아니요</label><br>
           <br>
 
-          앞으로 추가로 배우시고 싶은 내용은?: : <br>
-          <select name="form1_subject_name" id="form1_subject_id">
+          <!-- label의 for 속성을 select의 id와 일치시킵니다 -->
+          앞으로 추가로 배우시고 싶은 내용은?: <br>
+          <label for="form1_subject_id" style="display: none;">배우고 싶은 내용 선택</label> <!-- 스크린 리더를 위한 숨겨진 레이블 -->
+          <select name="form1_subject_name" id="form1_subject_id" required>
+              <option value="" disabled selected>선택하세요</option> <!-- 기본 비활성 옵션 추가 -->
               <option value="웹프로그래밍">웹프로그래밍</option>
               <option value="앱스스크립트">앱스스크립트</option>
               <option value="인공지능">인공지능</option>
